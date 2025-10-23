@@ -1,0 +1,85 @@
+name: 打包并发布Release
+
+on:
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write  # 需要创建release的权限
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取所有历史以便读取tags
+
+      - name: 获取最新版本号
+        id: get_version
+        shell: pwsh
+        run: |
+          # 检查是否存在tag
+          $tags = git tag
+          if (-not $tags) {
+            # 没有tag时，设置初始版本为0.0.1
+            $new_tag = "0.0.1"
+            Write-Host "当前仓库没有tag，设置初始版本为 $new_tag"
+          } else {
+            # 获取最新tag
+            $latest_tag = git describe --abbrev=0 --tags
+            Write-Host "最新tag: $latest_tag"
+            
+            # 解析版本号（格式为x.y.z）
+            $versionParts = $latest_tag -split '\.'
+            $major = $versionParts[0]
+            $minor = $versionParts[1]
+            $patch = [int]$versionParts[2]
+            
+            # 递增修订号
+            $new_patch = $patch + 1
+            $new_tag = "$major.$minor.$new_patch"
+            Write-Host "新版本号: $new_tag"
+          }
+          
+          Write-Host "new_tag=$new_tag"
+          # 写入环境变量（供后续步骤通过 env.new_tag 使用）
+          echo "new_tag=$new_tag" >> $env:GITHUB_ENV
+          # 写入输出变量（供后续步骤通过 steps.get_version.outputs.new_tag 使用）
+          echo "new_tag=$new_tag" >> $env:GITHUB_OUTPUT
+
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -i https://pypi.org/simple/
+          pip install pyinstaller
+
+      - name: 打包应用
+        run: |
+          pyinstaller -F -w -i .\resource\logo.png -n bili-download .\main.py
+
+      - name: 创建Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.new_tag }}
+          release_name: V ${{ env.new_tag }}
+          draft: false
+          prerelease: false
+
+      - name: 上传打包文件
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/bili-download.exe
+          asset_name: bili-download.exe
+          asset_content_type: application/exe
