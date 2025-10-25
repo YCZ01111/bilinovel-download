@@ -75,7 +75,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.new_tag }}
-          release_name: V ${{ env.new_tag }}
+          release_name: v${{ env.new_tag }}
           body: ${{ github.event.inputs.release_notes }}  # 引用用户输入的发布说明
           draft: false
           prerelease: false
