@@ -18,6 +18,7 @@ jobs:
       - name: 拉取代码
         uses: actions/checkout@v4
         with:
+          ref: Reordering-the-main-text  # 指定打包的分支
           fetch-depth: 0  # 获取所有历史以便读取tags
 
       - name: 获取最新版本号
