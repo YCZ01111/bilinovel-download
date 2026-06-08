@@ -91,33 +91,17 @@ class Editer(object):
         if is_main_text:
             bf = BeautifulSoup(req, 'html.parser')
             p_eles = self.tab.eles('tag:p')
-            
-            # 找出需要删除的p元素
-            p_elements_to_remove = []
             for p in p_eles:
-                # 检查display:none的元素
                 if p.style(style='display') == 'none':
                     all_attrs = p.attrs
                     for key in all_attrs.keys():
                         if 'data-' in key:
                             class_key = key
                             class_value = all_attrs[class_key]
-                            # 找出所有具有相同data-属性的p元素
-                            p_elements_to_remove.extend(bf.find_all('p', {class_key: class_value}))
-                # 检查transform样式为scale(0)的元素 - 实现与浏览器脚本相同的过滤功能
-                transform = p.style(style='transform')
-                if transform == 'scale(0)' or transform == 'matrix(0, 0, 0, 0, 0, 0)':
-                    all_attrs = p.attrs
-                    for key in all_attrs.keys():
-                        if 'data-' in key:
-                            class_key = key
-                            class_value = all_attrs[class_key]
-                            # 找出所有具有相同data-属性的p元素
-                            p_elements_to_remove.extend(bf.find_all('p', {class_key: class_value}))
-            
-            # 删除找出的元素
-            for p in p_elements_to_remove:
-                p.decompose()
+                    # class_value = p.attr('class')
+                    p_elements_to_remove = bf.find_all('p', {class_key: class_value})
+                    for p in p_elements_to_remove:
+                        p.decompose()
 
             p_tags = bf.find_all('p')
             for p in p_tags:
