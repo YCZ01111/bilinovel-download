@@ -77,15 +77,11 @@ class Editer(object):
     def get_html(self, url, is_gbk=False, is_main_text=False):
         while True:
             self.tab.get(url)
-            if is_main_text:
-                time.sleep(2)
             req = self.tab.html
-            while '&lt;title&gt;Access denied | www.linovelib.com used Cloudflare to restrict access&lt;/title&gt;' in req:
+            while '<title>Access denied | www.linovelib.com used Cloudflare to restrict access</title>' in req:
                 print('下载频繁，触发反爬，5秒后重试....')
                 time.sleep(5)
                 self.tab.get(url)
-                if is_main_text:
-                    time.sleep(2)
                 req = self.tab.html
             if is_gbk:
                 req.encoding = 'GBK'       #这里是网页的编码转换，根据网页的实际需要进行修改，经测试这个编码没有问题
